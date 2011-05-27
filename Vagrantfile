@@ -88,12 +88,6 @@ Vagrant::Config.run do |config|
   config.vm.share_folder("v-root", "/vagrant", ".", :nfs => true)
   config.vm.provision :chef_solo do |chef|
     chef.cookbooks_path = "cookbooks"
-    chef.add_recipe "nginx"
-    chef.add_recipe "drupal-fpm"
-    chef.json.merge!({
-      :hosts => {
-	    :localhost_aliases => ["apci.nginx.local"]
-	  }
-    })
+    chef.add_role("drupal-fpm")
   end
 end
