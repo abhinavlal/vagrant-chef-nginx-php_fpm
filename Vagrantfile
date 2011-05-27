@@ -81,11 +81,19 @@ Vagrant::Config.run do |config|
   #   chef.validation_client_name = "ORGNAME-validator"
 
   config.vm.box = "ubuntu_11.04_server_amd64"
+  config.vm.customize do |vm|
+    vm.memory_size = 1024
+  end
   config.vm.network("10.234.90.20")
   config.vm.share_folder("v-root", "/vagrant", ".", :nfs => true)
   config.vm.provision :chef_solo do |chef|
     chef.cookbooks_path = "cookbooks"
     chef.add_recipe "nginx"
-	  chef.add_recipe "drupal-fpm"
+    chef.add_recipe "drupal-fpm"
+    chef.json.merge!({
+      :hosts => {
+	    :localhost_aliases => ["apci.nginx.local"]
+	  }
+    })
   end
 end

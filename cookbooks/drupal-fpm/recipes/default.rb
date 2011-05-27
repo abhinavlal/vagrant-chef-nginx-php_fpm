@@ -11,8 +11,8 @@ require_recipe "php::module_mysql"
   require_recipe "php::module_memcache"
 require_recipe "memcached"
 #require_recipe "imagemagick"
-#require_recipe "build-essential"
-#require_recipe "hosts"
+require_recipe "build-essential"
+require_recipe "hosts"
 #require_recipe "drush"
 
 # Some neat package (subversion is needed for "subversion" chef ressource)
