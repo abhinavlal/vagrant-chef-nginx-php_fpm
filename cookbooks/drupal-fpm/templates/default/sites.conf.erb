@@ -1,62 +1,40 @@
-<VirtualHost *:8080>
-  ServerName <%= @params[:server_name] %>
-  ServerAlias <% @params[:server_aliases].each do |a| %><%= "#{a}" %> <% end %>
-  DocumentRoot <%= @params[:docroot] %>
-  RewriteEngine On
-  
-  <Directory <%= @params[:docroot] %>>
-    Options FollowSymLinks
-    AllowOverride All
-    Order allow,deny
-    Allow from all
-  </Directory>
-  
-  <Directory />
-    Options FollowSymLinks
-    AllowOverride None
-  </Directory>
+server {
+  listen   80;
+  server_name <%= @params[:server_name] %>;
 
-  <Location /server-status>
-    SetHandler server-status
+  access_log  <%= node[:nginx][:log_dir] %>/<%= @params[:server_name] %>.access.log;
 
-    Order Allow,Deny
-    Allow from all
-  </Location>
+  root   <%= @params[:docroot] %>;
+  index  index.php;
 
-  php_flag xdebug.profiler_enable_trigger On
+  if (!-e $request_filename) {
+    rewrite  ^/(.*)$  /index.php?q=$1  last;
+    break;
+  }
 
-  LogLevel info
-  ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-error.log
-  CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-access.log combined
+  location ~ (\.php)$ {
+    include fastcgi_params;
+    fastcgi_index index.php;
+    fastcgi_connect_timeout 60;
+    fastcgi_send_timeout 180;
+    fastcgi_read_timeout 180;
+    fastcgi_buffer_size 128k;
+    fastcgi_buffers 4 256k;
+    fastcgi_busy_buffers_size 256k;
+    fastcgi_temp_file_write_size 256k;
+    fastcgi_intercept_errors on;
+    fastcgi_pass 127.0.0.1:9000;
+  }
 
-  RewriteEngine On
-  RewriteLog <%= node[:apache][:log_dir] %>/<%= @application_name %>-rewrite.log
-  # level 0 => Do not log rewrite
-  RewriteLogLevel 0
+## Images and static content is treated different
+    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|xml)$ {
+      access_log        off;
+      expires           30d;
+    }
 
-  ###
-  # Canonical host, <%= @params[:server_name] %>
-  ###
-  # For sites running on a port other than 80
-  RewriteCond %{HTTP_HOST}   !^<%= @params[:server_name] %> [NC]
-  RewriteCond %{HTTP_HOST}   !^$
-  RewriteCond %{SERVER_PORT} !^80$
-  RewriteRule ^/(.*)$        http://<%= @params[:server_name] %>:%{SERVER_PORT}/$1 [L,R=301]
-  # For sites running on port 80
-  RewriteCond %{HTTP_HOST}   !^<%= @params[:server_name] %> [NC]
-  RewriteCond %{HTTP_HOST}   !^$
-  RewriteRule ^/(.*)$        http://<%= @params[:server_name] %>/$1 [L,R=301]
 
-  ###
-  # Maintenance file
-  ###
-  RewriteCond %{DOCUMENT_ROOT}/system/maintenance.html -f
-  RewriteCond %{SCRIPT_FILENAME} !maintenance.html
-  RewriteRule ^.*$ /system/maintenance.html [L,R=302]
-  # For sites running on a port other than 80
-  RewriteCond %{DOCUMENT_ROOT}/system/maintenance.html -f
-  RewriteCond %{SCRIPT_FILENAME} !maintenance.html
-  RewriteCond %{SERVER_PORT} !^80$
-  RewriteRule ^.*$        http://<%= @params[:server_name] %>:%{SERVER_PORT}/system/maintenance.html [L,R=302]
-
-</VirtualHost>
+## Disable viewing .htaccess & .htpassword
+    location ~ /\.ht {
+        deny  all;
+    }
+}

@@ -29,19 +29,20 @@ package "libpcre3-dev"
 
 # Install APC.
 php_pear "apc" do
+  directives(:shm_size => 128)
   version "3.1.6" #ARGH!!! debuging enabled on APC builds circa 5/2011. Pin back.
   action :install
 end
 
-#node[:hosts][:localhost_aliases].each do |site|
-#  # Configure the development site
-#  web_app site do
-#    template "sites.conf.erb"
-#    server_name site
-#    server_aliases [site]
-#    docroot "/vagrant/public/#{site}/www"
-#  end
-#end
+node[:hosts][:localhost_aliases].each do |site|
+  # Configure the development site
+  nginx_app site do
+    template "sites.conf.erb"
+    server_name site
+    server_aliases [site]
+    docroot "/vagrant/public/#{site}/www"
+  end
+end
 
 # Add apc conf until we can correctly config apc
 #bash "apc_shm_size_conf" do
